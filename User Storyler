@@ -1,0 +1,35 @@
+1. Temel Yapay Zekâ Sadeleştirmesi
+Kullanıcı Hikayesi: Disleksik bir öğrenci olarak, web sayfalarındaki karmaşık ve uzun paragrafları tek bir butona tıklayarak daha basit, kısa ve etken cümleler halinde görmek istiyorum; böylece araştırma ödevlerimi yaparken okuduğumu daha hızlı anlayabilirim.
+Kabul Kriterleri (AC):
+Eklenti menüsünde "Sayfayı Basitleştir" butonu olmalıdır.
+Butona tıklandığında aktif sayfadaki <p> (paragraf) etiketleri içindeki metinler çekilip NLP API'sine gönderilmelidir.
+API'den dönen sadeleşmiş metin, orijinal metnin yerini (sayfanın genel HTML yapısını bozmadan) almalıdır.
+İstek atılması ile metnin değişmesi arasındaki süre maksimum 2.5 saniye olmalıdır.
+2. Disleksi Dostu Tipografi (Görsel Adaptasyon)
+Kullanıcı Hikayesi: Okuma güçlüğü çeken bir yetişkin olarak, girdiğim web sitelerindeki standart yazı tiplerini kendi seçtiğim disleksi dostu bir yazı tipine (örn. OpenDyslexic) çevirmek istiyorum; böylece harflerin birbirine karışmasını ve satırların kaymasını engelleyebilirim.
+Kabul Kriterleri (AC):
+Eklenti arayüzünde "Disleksi Fontunu Aktifleştir" (Toggle) seçeneği bulunmalıdır.
+Aktif edildiğinde sayfadaki tüm metin etiketlerinin (h1, h2, p, span vb.) CSS font-family özelliği "OpenDyslexic" olarak güncellenmelidir.
+Bu ayar chrome.storage API'si ile tarayıcıya kaydedilmeli; kullanıcı sayfayı yenilese veya yeni bir sekmeye geçse bile bu ayar aktif kalmalıdır.
+3. Renk Kontrastı Optimizasyonu
+Kullanıcı Hikayesi: Işık hassasiyeti olan bir kullanıcı olarak, sayfanın arka plan rengini pastel tonlara ve metin rengini koyu bir tona dönüştürebilmek istiyorum; böylece parlak beyaz ekranın gözümü yormasını engelleyerek odaklanma süremi uzatabilirim.
+Kabul Kriterleri (AC):
+Eklenti arayüzünde "Göz Dostu Kontrast" butonu olmalıdır.
+Tıklandığında sayfanın <body> arka plan rengi özel pastel kreme (#FDF6E3) ve metin rengi koyu griye (#333333) dönüşmelidir.
+Uygulanan bu CSS değişikliği, sitenin orijinal tasarımını tamamen bozmamalıdır (sayfa düzeni korunmalıdır).
+4. Sesli Okuma (Text-to-Speech) Entegrasyonu
+Kullanıcı Hikayesi: İşitsel algısı görsel algısından güçlü olan bir birey olarak, sayfadaki basitleştirilmiş metinleri eklenti üzerinden sesli olarak dinleyebilmek istiyorum; böylece okurken yorulduğum anlarda metni takip etmeyi bırakmamış olurum.
+Kabul Kriterleri (AC):
+Eklenti menüsünde "Sesli Oku" (Play) ve "Duraklat" (Pause) butonları bulunmalıdır.
+Web Speech API kullanılarak sayfadaki güncel metin seslendirilmelidir.
+Disleksik bireylerin kelimeleri rahat takip edebilmesi için, sesli okuma hızı (rate) standart hızdan %20 daha yavaş (0.8x) olarak ayarlanmış şekilde başlamalıdır.
+5. Sistemsel Hız ve Önbellek (Caching)
+Kullanıcı Hikayesi: Eklentiyi günlük okumaları için kullanan bir birey olarak, daha önce sadeleştirilmiş popüler bir makaleye girdiğimde beklemeden doğrudan sadeleşmiş halini okumak istiyorum; böylece aynı işlem için tekrar saniyelerce bekleyip vakit kaybetmem.
+Kabul Kriterleri (AC):
+C# Web API, daha önce çevrilmiş bir metin için tekrar istek aldığında (Hash kontrolü ile), Python/OpenAI servisine gitmeden cevabı doğrudan SQLite önbelleğinden döndürmelidir.
+Önbellekten dönen cevapların sayfa manipülasyonu süresi 0.5 saniyenin altında olmalıdır.
+6. Orijinale Dönüş (Toggle/Revert Mekanizması)
+Kullanıcı Hikayesi: Sayfada araştırma yapan bir kullanıcı olarak, değiştirilmiş web sayfasını tek tıkla orijinal ilk haline döndürebilmek istiyorum; böylece orijinal metindeki teknik bir detaya veya kelimeye bakmam gerektiğinde sayfayı yenilemek zorunda kalmam.
+Kabul Kriterleri (AC):
+Eklenti menüsünde "Orijinal Sayfaya Dön" veya "Eklentiyi Devre Dışı Bırak" butonu olmalıdır.
+Tıklandığında, content.js tarafından hafızada tutulan orijinal DOM yapısı (metinler, renkler ve fontlar) sayfaya anında geri yüklenmelidir.
