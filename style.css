@@ -1,0 +1,18 @@
+.dyslexia-mode {
+  background-color: #fdf6e3 !important;
+}
+
+.dyslexia-mode p {
+  font-size: 22px !important;
+  line-height: 2.2 !important;
+  letter-spacing: 2px !important;
+  word-spacing: 3px !important;
+  font-family: Arial, sans-serif !important;
+}
+
+.dyslexia-mode h1,
+.dyslexia-mode h2,
+.dyslexia-mode h3 {
+  font-size: 26px !important;
+  line-height: 2.2 !important;
+}
