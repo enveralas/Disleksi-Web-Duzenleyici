@@ -1,51 +1,102 @@
 const apiKeyInput = document.getElementById("apiKey");
 const saveKeyButton = document.getElementById("saveKey");
 const togglePageButton = document.getElementById("togglePage");
+const fontSizeSlider = document.getElementById("fontSize");
+const fontSizeText = document.getElementById("fontSizeText");
+const fontSelect = document.getElementById("fontSelect");
 const durum = document.getElementById("durum");
 
-// SAYFA AÇILINCA API KEY YÜKLE
-async function loadKey() {
-  const data = await chrome.storage.sync.get(["geminiApiKey"]);
 
-  if (data.geminiApiKey) {
-    apiKeyInput.value = data.geminiApiKey;
-    durum.textContent = "API anahtarı yüklendi";
-  } else {
-    durum.textContent = "API anahtarı yok";
+// LOAD
+async function loadSettings() {
+  const { geminiApiKey, fontSize, fontFamily } =
+    await chrome.storage.sync.get(["geminiApiKey", "fontSize", "fontFamily"]);
+
+  if (geminiApiKey) apiKeyInput.value = geminiApiKey;
+
+  if (fontSize) {
+    fontSizeSlider.value = fontSize;
+    fontSizeText.textContent = "Boyut: " + fontSize;
+  }
+
+  if (fontFamily) {
+    fontSelect.value = fontFamily;
   }
 }
 
-// API KEY KAYDET
+loadSettings();
+
+
+// API KEY
 saveKeyButton.addEventListener("click", async () => {
   const key = apiKeyInput.value.trim();
-
   if (!key) {
-    durum.textContent = "Geçerli bir API key gir";
+    durum.textContent = "Geçerli API key gir.";
     return;
   }
 
   await chrome.storage.sync.set({ geminiApiKey: key });
-
-  durum.textContent = "Kaydedildi";
+  durum.textContent = "Kaydedildi.";
 });
 
-// TOGGLE (TÜM SAYFA DISLEKSI MODU)
-togglePageButton.addEventListener("click", () => {
-  chrome.runtime.sendMessage({ action: "toggleFullPageStyle" }, (response) => {
 
-    if (chrome.runtime.lastError) {
-      durum.textContent = "Hata: " + chrome.runtime.lastError.message;
-      return;
-    }
+// SLIDER (ANLIK)
+fontSizeSlider.addEventListener("input", async () => {
 
-    if (response?.error) {
-      durum.textContent = response.error;
-      return;
-    }
+  const size = parseInt(fontSizeSlider.value);
+  const font = fontSelect.value;
 
-    durum.textContent = "Disleksi modu değiştirildi";
+  fontSizeText.textContent = "Boyut: " + size;
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: (size, font) => {
+      document.body.classList.add("dyslexia-active");
+      document.body.style.setProperty("--d-font", font);
+      document.body.style.setProperty("--d-size", size + "px");
+    },
+    args: [size, font]
   });
 });
 
-// BAŞLANGIÇ
-loadKey();
+
+// FONT CHANGE (ANLIK)
+fontSelect.addEventListener("change", async () => {
+
+  const font = fontSelect.value;
+  const size = parseInt(fontSizeSlider.value);
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: (font, size) => {
+      document.body.classList.add("dyslexia-active");
+      document.body.style.setProperty("--d-font", font);
+      document.body.style.setProperty("--d-size", size + "px");
+    },
+    args: [font, size]
+  });
+});
+
+
+// TOGGLE
+togglePageButton.addEventListener("click", async () => {
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!tab?.id) {
+    durum.textContent = "Sekme yok.";
+    return;
+  }
+
+  chrome.tabs.sendMessage(tab.id, {
+    action: "toggleFullPageStyle"
+  });
+
+  durum.textContent = "Disleksi modu aç/kapatıldı";
+});
