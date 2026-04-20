@@ -1,8 +1,9 @@
 let aktif = false;
 
-chrome.runtime.onInstalled.addListener(function () {
+// ================= MENU OLUŞTUR =================
+chrome.runtime.onInstalled.addListener(() => {
 
-  chrome.contextMenus.removeAll(function () {
+  chrome.contextMenus.removeAll(() => {
 
     chrome.contextMenus.create({
       id: "root",
@@ -31,34 +32,84 @@ chrome.runtime.onInstalled.addListener(function () {
       contexts: ["selection"]
     });
 
+    chrome.contextMenus.create({
+      id: "ai_simplify",
+      parentId: "root",
+      title: "AI ile Sadeleştir",
+      contexts: ["selection"]
+    });
+
   });
 
 });
 
-chrome.contextMenus.onClicked.addListener(function (info, tab) {
+
+// ================= AI =================
+async function simplifyTextWithGemini(text) {
+
+  const { geminiApiKey } = await chrome.storage.sync.get(["geminiApiKey"]);
+
+  if (!geminiApiKey) {
+    throw new Error("API key yok");
+  }
+
+  const prompt = `Aşağıdaki Türkçe metni disleksi bireyler için sadeleştir:
+- Kısa cümleler kur
+- Basit kelimeler kullan
+- Anlamı bozma
+
+Metin:
+${text}`;
+
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": geminiApiKey
+      },
+      body: JSON.stringify({
+        contents: [
+          { parts: [{ text: prompt }] }
+        ]
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sonuç alınamadı";
+}
+
+
+// ================= SAĞ CLICK =================
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+
+  if (!tab?.id) return;
 
   // SEÇİLİ METİN
   if (info.menuItemId === "selected") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: function (text) {
-        var selection = window.getSelection();
+      func: (text) => {
 
-        if (selection.rangeCount > 0) {
-          var range = selection.getRangeAt(0);
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
 
-          var span = document.createElement("span");
-          span.style.backgroundColor = "#fdf6e3";
-          span.style.fontSize = "20px";
-          span.style.lineHeight = "2";
-          span.style.letterSpacing = "1.5px";
-          span.style.fontFamily = "Comic Sans MS, Arial";
+        const range = selection.getRangeAt(0);
 
-          span.textContent = text;
+        const span = document.createElement("span");
+        span.style.backgroundColor = "#fdf6e3";
+        span.style.fontSize = "20px";
+        span.style.lineHeight = "2";
+        span.style.letterSpacing = "1.5px";
+        span.style.fontFamily = "Comic Sans MS, Arial";
+        span.textContent = text;
 
-          range.deleteContents();
-          range.insertNode(span);
-        }
+        range.deleteContents();
+        range.insertNode(span);
+
       },
       args: [info.selectionText]
     });
@@ -68,28 +119,27 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
   if (info.menuItemId === "all") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: function () {
+      func: () => {
 
-        var eski = document.getElementById("dyslexia-style");
-        if (eski) return;
+        if (document.getElementById("dyslexia-style")) return;
 
-        var style = document.createElement("style");
+        const style = document.createElement("style");
         style.id = "dyslexia-style";
-
         style.innerHTML =
           "* { font-family: Comic Sans MS, Arial !important; line-height:2 !important; letter-spacing:1.5px !important; } body { background:#fdf6e3 !important; }";
 
         document.head.appendChild(style);
+
       }
     });
   }
 
-  // SES
+  // SESLİ OKU
   if (info.menuItemId === "read") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: function (text) {
-        var speech = new SpeechSynthesisUtterance(text);
+      func: (text) => {
+        const speech = new SpeechSynthesisUtterance(text);
         speech.lang = "tr-TR";
         speech.rate = 0.9;
         speechSynthesis.speak(speech);
@@ -98,40 +148,65 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
     });
   }
 
+  // AI SADELEŞTİR
+  if (info.menuItemId === "ai_simplify") {
+    try {
+      const simplified = await simplifyTextWithGemini(info.selectionText || "");
+
+      chrome.tabs.sendMessage(tab.id, {
+        action: "replaceSelectedText",
+        simplifiedText: simplified
+      });
+
+    } catch (err) {
+      chrome.tabs.sendMessage(tab.id, {
+        action: "showError",
+        message: err.message
+      });
+    }
+  }
+
 });
 
 
-// İKON TOGGLE
-chrome.action.onClicked.addListener(function (tab) {
+// ================= POPUP TOGGLE =================
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
-  aktif = !aktif;
+  if (request.action === "toggleFullPageStyle") {
 
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: function (durum) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
-      var eski = document.getElementById("toggle-style");
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        func: () => {
 
-      if (durum) {
+          const aktif = document.body.classList.contains("dyslexia-mode");
 
-        if (eski) return;
+          if (aktif) {
+            document.body.classList.remove("dyslexia-mode");
+            document.querySelectorAll("*").forEach(el => {
+              el.style.fontSize = "";
+              el.style.lineHeight = "";
+              el.style.letterSpacing = "";
+              el.style.fontFamily = "";
+              el.style.backgroundColor = "";
+            });
+          } else {
+            document.body.classList.add("dyslexia-mode");
+            document.querySelectorAll("*").forEach(el => {
+              el.style.fontSize = "20px";
+              el.style.lineHeight = "1.8";
+              el.style.letterSpacing = "0.8px";
+              el.style.fontFamily = "Comic Sans MS, Arial";
+            });
+            document.body.style.backgroundColor = "#fdf6e3";
+          }
 
-        var style = document.createElement("style");
-        style.id = "toggle-style";
+        }
+      });
 
-        style.innerHTML =
-          "* { font-family: Comic Sans MS, Arial !important; line-height:2 !important; letter-spacing:1.5px !important; } body { background:#fdf6e3 !important; }";
+    });
 
-        document.head.appendChild(style);
-
-      } else {
-
-        if (eski) eski.remove();
-
-      }
-
-    },
-    args: [aktif]
-  });
+  }
 
 });

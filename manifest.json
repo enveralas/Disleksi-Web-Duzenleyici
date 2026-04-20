@@ -1,13 +1,35 @@
 {
   "manifest_version": 3,
   "name": "Disleksi Modu",
-  "version": "1.1",
-  "permissions": ["contextMenus", "activeTab", "scripting"],
-  "host_permissions": ["<all_urls>"],
+  "version": "1.2",
+  "description": "Disleksi dostu okuma modu, sesli okuma ve AI ile metin sadeleştirme.",
+
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+
+  "host_permissions": [
+    "<all_urls>",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+
   "background": {
     "service_worker": "background.js"
   },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
   "action": {
-    "default_title": "Disleksi Modu Aç/Kapat"
+    "default_title": "Disleksi Modu Aç/Kapat",
+    "default_popup": "popup.html"
   }
 }
