@@ -1,18 +1,33 @@
-.dyslexia-mode {
-  background-color: #fdf6e3 !important;
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 12px;
+  width: 320px;
+  background: #faf7ef;
 }
 
-.dyslexia-mode p {
-  font-size: 22px !important;
-  line-height: 2.2 !important;
-  letter-spacing: 2px !important;
-  word-spacing: 3px !important;
-  font-family: Arial, sans-serif !important;
+.kutu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.dyslexia-mode h1,
-.dyslexia-mode h2,
-.dyslexia-mode h3 {
-  font-size: 26px !important;
-  line-height: 2.2 !important;
+h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+input, button {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  cursor: pointer;
+}
+
+#durum {
+  min-height: 20px;
+  font-size: 13px;
 }

@@ -1,27 +1,49 @@
-let lastSelection = null;
+let lastRange = null;
 
-// kullanıcı seçim yapınca kaydet
-document.addEventListener("mouseup", () => {
-  let selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    lastSelection = selection.getRangeAt(0);
+function saveSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+  lastRange = selection.getRangeAt(0).cloneRange();
+}
+
+document.addEventListener("mouseup", saveSelection);
+document.addEventListener("keyup", saveSelection);
+
+document.addEventListener("selectionchange", () => {
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+    lastRange = selection.getRangeAt(0).cloneRange();
   }
 });
 
-// popup’tan mesaj gelince çalış
+function replaceSelectedText(simplifiedText) {
+  if (!lastRange) {
+    alert("Metin seçimi bulunamadı. Lütfen metni tekrar seç.");
+    return;
+  }
+
+  const span = document.createElement("span");
+  span.style.backgroundColor = "#fdf6e3";
+  span.style.fontSize = "22px";
+  span.style.lineHeight = "2";
+  span.style.letterSpacing = "1px";
+  span.style.padding = "2px 4px";
+  span.style.borderRadius = "4px";
+  span.textContent = simplifiedText;
+
+  lastRange.deleteContents();
+  lastRange.insertNode(span);
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+}
+
 chrome.runtime.onMessage.addListener((request) => {
-  if (request.action === "applyStyle" && lastSelection) {
+  if (request.action === "replaceSelectedText") {
+    replaceSelectedText(request.simplifiedText);
+  }
 
-    let span = document.createElement("span");
-
-    span.style.backgroundColor = "#fdf6e3";
-    span.style.fontSize = "22px";
-    span.style.lineHeight = "2.2";
-    span.style.letterSpacing = "2px";
-
-    span.textContent = lastSelection.toString();
-
-    lastSelection.deleteContents();
-    lastSelection.insertNode(span);
+  if (request.action === "showError") {
+    alert(request.message);
   }
 });

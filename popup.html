@@ -1,10 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disleksi Dönüştürücü</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
+  <div class="kutu">
+    <h2>Disleksi Dönüştürücü</h2>
 
-<button id="toggle">Aç</button>
+    <label for="apiKey">Gemini API Key</label>
+    <input type="password" id="apiKey" placeholder="AIza..." />
+    <button id="saveKey">API anahtarını kaydet</button>
 
-<script src="popup.js"></script>
+    <button id="togglePage">Tüm sayfada disleksi modu aç/kapat</button>
+    <p id="durum"></p>
+  </div>
 
+  <script src="popup.js"></script>
 </body>
 </html>
