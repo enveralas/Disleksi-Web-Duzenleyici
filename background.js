@@ -1,29 +1,60 @@
-// Sağ click menü
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "dyslexia",
-    title: "Disleksi Moduna Çevir",
-    contexts: ["selection"]
+let aktif = false;
+
+chrome.runtime.onInstalled.addListener(function () {
+
+  chrome.contextMenus.removeAll(function () {
+
+    chrome.contextMenus.create({
+      id: "root",
+      title: "Disleksi Modu",
+      contexts: ["all"]
+    });
+
+    chrome.contextMenus.create({
+      id: "selected",
+      parentId: "root",
+      title: "Seçili Metni Dönüştür",
+      contexts: ["selection"]
+    });
+
+    chrome.contextMenus.create({
+      id: "all",
+      parentId: "root",
+      title: "Tüm Sayfayı Dönüştür",
+      contexts: ["page"]
+    });
+
+    chrome.contextMenus.create({
+      id: "read",
+      parentId: "root",
+      title: "Sesli Oku",
+      contexts: ["selection"]
+    });
+
   });
+
 });
 
-// Sağ click → seçili metin
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "dyslexia") {
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
+
+  // SEÇİLİ METİN
+  if (info.menuItemId === "selected") {
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (selectedText) => {
-        let selection = window.getSelection();
+      func: function (text) {
+        var selection = window.getSelection();
+
         if (selection.rangeCount > 0) {
-          let range = selection.getRangeAt(0);
-          let span = document.createElement("span");
+          var range = selection.getRangeAt(0);
 
-          span.style.fontSize = "20px";
-          span.style.lineHeight = "1.8";
-          span.style.letterSpacing = "1px";
+          var span = document.createElement("span");
           span.style.backgroundColor = "#fdf6e3";
+          span.style.fontSize = "20px";
+          span.style.lineHeight = "2";
+          span.style.letterSpacing = "1.5px";
+          span.style.fontFamily = "Comic Sans MS, Arial";
 
-          span.textContent = selectedText;
+          span.textContent = text;
 
           range.deleteContents();
           range.insertNode(span);
@@ -32,44 +63,75 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       args: [info.selectionText]
     });
   }
+
+  // TÜM SAYFA
+  if (info.menuItemId === "all") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: function () {
+
+        var eski = document.getElementById("dyslexia-style");
+        if (eski) return;
+
+        var style = document.createElement("style");
+        style.id = "dyslexia-style";
+
+        style.innerHTML =
+          "* { font-family: Comic Sans MS, Arial !important; line-height:2 !important; letter-spacing:1.5px !important; } body { background:#fdf6e3 !important; }";
+
+        document.head.appendChild(style);
+      }
+    });
+  }
+
+  // SES
+  if (info.menuItemId === "read") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: function (text) {
+        var speech = new SpeechSynthesisUtterance(text);
+        speech.lang = "tr-TR";
+        speech.rate = 0.9;
+        speechSynthesis.speak(speech);
+      },
+      args: [info.selectionText]
+    });
+  }
+
 });
 
-// TOGGLE SİSTEMİ
-chrome.action.onClicked.addListener((tab) => {
-  if (!tab.id) return;
+
+// İKON TOGGLE
+chrome.action.onClicked.addListener(function (tab) {
+
+  aktif = !aktif;
 
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    func: () => {
+    func: function (durum) {
 
-      // aktif mi kontrol et
-      const aktifMi = document.body.classList.contains("dyslexia-mode");
+      var eski = document.getElementById("toggle-style");
 
-      if (aktifMi) {
-        // KAPAT
-        document.body.classList.remove("dyslexia-mode");
+      if (durum) {
 
-        document.querySelectorAll("*").forEach(el => {
-          el.style.fontSize = "";
-          el.style.lineHeight = "";
-          el.style.letterSpacing = "";
-        });
+        if (eski) return;
 
-        document.body.style.backgroundColor = "";
+        var style = document.createElement("style");
+        style.id = "toggle-style";
+
+        style.innerHTML =
+          "* { font-family: Comic Sans MS, Arial !important; line-height:2 !important; letter-spacing:1.5px !important; } body { background:#fdf6e3 !important; }";
+
+        document.head.appendChild(style);
 
       } else {
-        // AÇ
-        document.body.classList.add("dyslexia-mode");
 
-        document.querySelectorAll("*").forEach(el => {
-          el.style.fontSize = "20px";
-          el.style.lineHeight = "1.8";
-          el.style.letterSpacing = "1px";
-        });
+        if (eski) eski.remove();
 
-        document.body.style.backgroundColor = "#fdf6e3";
       }
 
-    }
+    },
+    args: [aktif]
   });
+
 });
