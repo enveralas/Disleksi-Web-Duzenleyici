@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Disleksi Modu</title>
+  <style>
+    body { width: 250px; padding: 12px; font-family: Arial, sans-serif; background: #f4ecd8; }
+    select, input, button { width: 100%; margin-top: 6px; padding: 8px; box-sizing: border-box; border-radius: 7px; border: 1px solid #bbb; }
+    button { cursor: pointer; }
+    #durum, #fontSizeText { margin-top: 8px; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h3>Disleksi Modu</h3>
+  <input type="password" id="apiKey" placeholder="Gemini API Key gir">
+  <button id="saveKey">API Key Kaydet</button>
+  <select id="fontSelect">
+    <option value="OpenDyslexic">OpenDyslexic</option>
+    <option value="Arial">Arial</option>
+    <option value="Verdana">Verdana</option>
+    <option value="Lexend">Lexend</option>
+  </select>
+  <div id="fontSizeText">Boyut: 20</div>
+  <input type="range" id="fontSize" min="16" max="30" value="20">
+  <button id="togglePage">Disleksi Modu Aç/Kapat</button>
+  <div id="durum"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
