@@ -1,155 +1,214 @@
-const GEMINI_API_KEY = "AIzaSyBApoUxNFepLSAsviRoVzffHIxpaNguSM8";
-
 function createMenus() {
+
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: "root", title: "Disleksi Modu", contexts: ["all"] });
-    chrome.contextMenus.create({ id: "selected", parentId: "root", title: "Seçili Metni Dönüştür", contexts: ["selection"] });
-    chrome.contextMenus.create({ id: "read", parentId: "root", title: "Sesli Oku", contexts: ["selection"] });
-    chrome.contextMenus.create({ id: "ai", parentId: "root", title: "AI ile Sadeleştir", contexts: ["selection"] });
-    chrome.contextMenus.create({ id: "fullPage", parentId: "root", title: "Tüm Sayfayı Disleksi Moduna Çevir", contexts: ["all"] });
+
+    chrome.contextMenus.create({
+      id: "root",
+      title: "Disleksi Modu",
+      contexts: ["all"]
+    });
+
+    chrome.contextMenus.create({
+      id: "selected",
+      parentId: "root",
+      title: "Seçili Metni Dönüştür",
+      contexts: ["selection"]
+    });
+
+    chrome.contextMenus.create({
+      id: "read",
+      parentId: "root",
+      title: "Sesli Oku",
+      contexts: ["selection"]
+    });
+
+    chrome.contextMenus.create({
+      id: "ai",
+      parentId: "root",
+      title: "AI ile Sadeleştir",
+      contexts: ["selection"]
+    });
+
+    chrome.contextMenus.create({
+      id: "fullPage",
+      parentId: "root",
+      title: "Tüm Sayfayı Disleksi Moduna Çevir",
+      contexts: ["all"]
+    });
+
   });
+
 }
 
 chrome.runtime.onInstalled.addListener(createMenus);
 chrome.runtime.onStartup.addListener(createMenus);
+
 createMenus();
 
-function cleanText(text) {
-  return (text || "").replace(/\s+/g, " ").trim();
-}
 
-function finishSentence(text) {
-  let cleaned = cleanText(text);
-  if (!cleaned) return "";
-  if (!/[.!?]$/.test(cleaned)) cleaned += ".";
-  return cleaned;
-}
+// ================= AI =================
 
-async function simplifyTextWithGemini(text) {
-  const geminiApiKey = GEMINI_API_KEY;
+async function simplifyTextWithOpenAI(text) {
 
-  const selectedText = cleanText(text);
+  const selectedText = (text || "").trim();
 
   if (!selectedText) {
     throw new Error("Seçili metin bulunamadı.");
   }
 
   const prompt = `
-Aşağıdaki Türkçe metni disleksi bireyler için daha kolay okunur hale getir.
+Aşağıdaki Türkçe metni disleksi bireyler için daha kolay anlaşılır hale getir.
 
 Kurallar:
-- En önemli bilgileri koru.
-- Ana anlamı değiştirme.
-- Gereksiz detayları ve tekrarları kaldır.
-- Tarih, sayı, yaş ve kritik bilgileri koru.
-- Metni biraz daha kısa hale getir.
+- Metni kısalt ve özetle.
+- Uzun cümleleri kısa cümlelere böl.
 - Zor kelimeleri daha basit kelimelerle değiştir.
-- Daha az kelime kullan.
-- Çok fazla cümleye bölme.
-- Yeni bilgi ekleme.
-- Cümleyi yarıda bırakma.
-- Sadece düzenlenmiş metni yaz.
-
-Örnek:
-
-Girdi:
-"Yarışmaya Türkiye ve yurt dışında eğitim gören 14-30 yaş arası lise, ön lisans, lisans ve yüksek lisans öğrencileri katılabilir."
-
-Çıktı:
-"Yarışmaya Türkiye ve yurt dışında eğitim gören 14-30 yaş arası öğrenciler katılabilir."
+- Anlamı bozma.
+- Gereksiz detayları çıkar.
+- Açık, sade ve akıcı Türkçe kullan.
+- Sadece düzenlenmiş metni ver, açıklama yazma.
 
 Metin:
 ${selectedText}
 `;
 
-  const models = ["gemini-2.0-flash", "gemini-2.5-flash"];
-  let lastError = null;
+  try {
 
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": geminiApiKey
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 4096
-            }
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        lastError = data?.error?.message || `HTTP ${response.status}`;
-        continue;
+    const response = await fetch(
+      "http://localhost:3000/api/simplify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          text: prompt
+        })
       }
+    );
 
-      const output = data?.candidates?.[0]?.content?.parts
-        ?.map(part => part.text)
-        .join(" ")
-        .trim();
+    const data = await response.json();
 
-      if (output) return finishSentence(output);
-
-    } catch (err) {
-      lastError = err.message;
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Backend hatası"
+      );
     }
+
+    return data.result || "Sonuç alınamadı";
+
+  } catch (err) {
+
+    throw new Error(
+      err.message || "Bağlantı hatası"
+    );
+
   }
 
-  throw new Error(lastError || "Hiçbir model çalışmadı.");
 }
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (!tab?.id) return;
 
-  if (info.menuItemId === "selected") {
-    chrome.tabs.sendMessage(tab.id, {
-      action: "replaceSelectedText",
-      simplifiedText: info.selectionText || ""
-    });
-  }
+// ================= MENU CLICK =================
 
-  if (info.menuItemId === "ai") {
-    try {
-      const simplifiedText = await simplifyTextWithGemini(info.selectionText || "");
+chrome.contextMenus.onClicked.addListener(
+  async (info, tab) => {
 
-      await chrome.tabs.sendMessage(tab.id, {
-        action: "replaceSelectedText",
-        simplifiedText
-      });
+    if (!tab?.id) return;
 
-    } catch (error) {
-      await chrome.tabs.sendMessage(tab.id, {
-        action: "showError",
-        message: error.message
-      });
+    // SEÇİLİ METİN
+    if (info.menuItemId === "selected") {
+
+      chrome.tabs.sendMessage(
+        tab.id,
+        {
+          action: "replaceSelectedText",
+          simplifiedText:
+            info.selectionText
+        },
+        () => chrome.runtime.lastError
+      );
+
     }
-  }
 
-  if (info.menuItemId === "read") {
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: (text) => {
-        const speech = new SpeechSynthesisUtterance(text);
-        speech.lang = "tr-TR";
-        speech.rate = 0.9;
-        speechSynthesis.speak(speech);
-      },
-      args: [info.selectionText || ""]
-    });
-  }
+    // SESLİ OKU
+    if (info.menuItemId === "read") {
 
-  if (info.menuItemId === "fullPage") {
-    chrome.tabs.sendMessage(tab.id, {
-      action: "toggleFullPageStyle"
-    });
+      chrome.scripting.executeScript({
+        target: {
+          tabId: tab.id
+        },
+
+        func: (text) => {
+
+          const speech =
+            new SpeechSynthesisUtterance(
+              text
+            );
+
+          const pageLang = document.documentElement.lang || "tr-TR";
+          speech.lang = pageLang;
+          speech.rate = 0.9;
+
+          speechSynthesis.cancel();
+          speechSynthesis.speak(speech);
+
+        },
+
+        args: [
+          info.selectionText || ""
+        ]
+
+      });
+
+    }
+
+    // AI
+    if (info.menuItemId === "ai") {
+
+      try {
+
+        const result =
+          await simplifyTextWithOpenAI(
+            info.selectionText
+          );
+
+        await chrome.tabs.sendMessage(
+          tab.id,
+          {
+            action:
+              "replaceSelectedText",
+
+            simplifiedText: result
+          }
+        );
+
+      } catch (err) {
+
+        chrome.tabs.sendMessage(
+          tab.id,
+          {
+            action: "showError",
+            message: err.message
+          }
+        );
+
+      }
+
+    }
+
+    // FULL PAGE
+    if (info.menuItemId === "fullPage") {
+
+      chrome.tabs.sendMessage(
+        tab.id,
+        {
+          action:
+            "toggleFullPageStyle"
+        },
+        () => chrome.runtime.lastError
+      );
+
+    }
+
   }
-});
+);
