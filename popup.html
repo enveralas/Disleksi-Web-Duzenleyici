@@ -1,54 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
+
 <head>
   <meta charset="UTF-8">
   <title>Disleksi Modu</title>
 
-  <style>
-    body {
-      width: 230px;
-      padding: 12px;
-      font-family: Arial;
-      background: #f4ecd8;
-    }
-
-    select, input, button {
-      width: 100%;
-      margin-top: 6px;
-      padding: 6px;
-    }
-
-    #durum {
-      margin-top: 8px;
-      font-size: 12px;
-      text-align: center;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <h3>Disleksi Modu</h3>
+  <div class="kutu">
 
-  <input id="apiKey" placeholder="API Key gir">
+    <h2>Disleksi Modu</h2>
 
-  <button id="saveKey">Kaydet</button>
+    <select id="fontSelect">
 
-  <select id="fontSelect">
-    <option value="OpenDyslexic">OpenDyslexic</option>
-    <option value="Arial">Arial</option>
-    <option value="Verdana">Verdana</option>
-    <option value="Lexend">Lexend</option>
-  </select>
+      <option value="OpenDyslexic">
+        OpenDyslexic
+      </option>
 
-  <!-- YENİ -->
-  <input type="range" id="fontSize" min="16" max="30" value="20">
+      <option value="Arial">
+        Arial
+      </option>
 
-  <button id="togglePage">Disleksi Modu</button>
+      <option value="Verdana">
+        Verdana
+      </option>
 
-  <div id="durum"></div>
+      <option value="Lexend">
+        Lexend
+      </option>
+
+    </select>
+
+    <div id="fontSizeText">
+      Boyut: 20
+    </div>
+
+    <input
+      type="range"
+      id="fontSize"
+      min="14"
+      max="40"
+      value="20"
+    >
+
+    <button id="togglePage">
+      Disleksi Modu Aç/Kapat
+    </button>
+
+    <div id="durum"></div>
+
+  </div>
 
   <script src="popup.js"></script>
 
 </body>
+
 </html>
